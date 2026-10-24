@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quaresma Gourmet | Geladinhos Artesanais</title>
+    <!-- Tailwind CSS para Estilização Moderna -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        quaresmaPink: '#C2185B',
+                        quaresmaBlush: '#FCE4EC',
+                        quaresmaGold: '#C59B27',
+                        quaresmaBrown: '#3E1D0E',
+                        quaresmaLight: '#FFF8FA'
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome para Ícones -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Firebase SDK Compat (para Sincronização em Tempo Real) -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+</head>
+<body class="bg-quaresmaLight text-quaresmaBrown antialiased min-h-screen flex flex-col">
+
+    <!-- FAIXA ROTATIVA DE AVISOS -->
+    <div id="bannerFaixa" class="bg-quaresmaPink text-white text-xs sm:text-sm py-2 px-4 font-medium overflow-hidden whitespace-nowrap fixed top-0 left-0 right-0 z-50 shadow-sm flex items-center justify-between">
+        <div class="flex items-center gap-2">
+            <span class="bg-white/20 px-2 py-0.5 rounded text-[11px] font-bold uppercase tracking-wider" id="statusLojaBadge">🟢 Aberto</span>
+            <span id="textoFaixaRotativa" class="animate-pulse">Bem-vindo(a) à Quaresma Gourmet! Faça seu pedido online e receba fresquinho em casa.</span>
+        </div>
+        <a href="https://www.instagram.com/quaresma_gourmet/" target="_blank" class="hidden sm:inline-flex items-center gap-1 hover:text-quaresmaBlush transition"><i class="fab fa-instagram"></i> @quaresma_gourmet</a>
+    </div>
+
+    <!-- CABEÇALHO FIXO -->
+    <header class="bg-white shadow-md fixed top-[33px] sm:top-[37px] left-0 right-0 z-40 transition-all">
+        <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
+            <!-- Logo / Nome -->
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-quaresmaBlush border-2 border-quaresmaGold flex items-center justify-center overflow-hidden shadow-inner">
+                    <i class="fas fa-ice-cream text-quaresmaPink text-lg sm:text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-base sm:text-xl text-quaresmaBrown leading-tight">Quaresma Gourmet</h1>
+                    <p class="text-[10px] sm:text-xs text-quaresmaPink font-medium italic">Sabor, carinho e qualidade em cada mordida!</p>
+                </div>
+            </div>
+
+            <!-- Ações Direto no Topo -->
+            <div class="flex items-center gap-2 sm:gap-3">
+                <a href="https://www.instagram.com/quaresma_gourmet/" target="_blank" class="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-pink-50 text-quaresmaPink flex items-center justify-center hover:bg-quaresmaPink hover:text-white transition shadow-sm" title="Instagram">
+                    <i class="fab fa-instagram text-base sm:text-lg"></i>
+                </a>
+                <a href="https://wa.me/5599992020741?text=Olá! Vim pelo site e gostaria de tirar uma dúvida." target="_blank" class="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center hover:bg-emerald-600 hover:text-white transition shadow-sm" title="Suporte WhatsApp">
+                    <i class="fab fa-whatsapp text-base sm:text-lg"></i>
+                </a>
+                <!-- Botão da Sacola -->
+                <button onclick="toggleModal('modalSacola')" class="relative bg-quaresmaPink text-white px-3.5 py-2 sm:px-4 sm:py-2.5 rounded-full font-semibold text-xs sm:text-sm flex items-center gap-2 shadow-md hover:bg-rose-700 transition">
+                    <i class="fas fa-shopping-bag"></i>
+                    <span class="hidden sm:inline">Sacola</span>
+                    <span id="badgeQtd" class="bg-quaresmaGold text-quaresmaBrown text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center shadow">0</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- CONTEÚDO PRINCIPAL -->
+    <main class="flex-grow max-w-6xl mx-auto px-4 w-full pt-32 sm:pt-36 pb-20">
+        
+        <!-- Banner Destaque -->
+        <section class="bg-gradient-to-r from-quaresmaBlush via-pink-50 to-amber-50 rounded-2xl p-6 sm:p-8 mb-8 border border-quaresmaGold/30 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-6">
+            <div class="text-center sm:text-left space-y-2">
+                <span class="bg-quaresmaGold/20 text-quaresmaBrown text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">Artesanais & Cremosos</span>
+                <h2 class="text-2xl sm:text-3xl font-extrabold text-quaresmaBrown">Geladinhos Gourmet Incomparáveis</h2>
+                <p class="text-xs sm:text-sm text-gray-700 max-w-lg">Mamãe faz e nós vendemos! Escolha seus sabores favoritos, adicione à sacola e finalize o pedido direto pelo nosso WhatsApp com rapidez.</p>
+            </div>
+            <div class="flex flex-col gap-2 w-full sm:w-auto">
+                <button onclick="toggleModal('modalAdmin')" class="bg-quaresmaBrown text-quaresmaGold text-xs font-bold py-2.5 px-4 rounded-xl shadow hover:bg-black transition flex items-center justify-center gap-2">
+                    <i class="fas fa-lock"></i> 🔒 Área do Lojista
+                </button>
+            </div>
+        </section>
+
+        <!-- Filtros e Busca -->
+        <div class="flex flex-col sm:flex-row items-center justify-between gap-4 mb-6">
+            <!-- Categorias -->
+            <div id="listaCategoriasFiltro" class="flex items-center gap-2 overflow-x-auto w-full pb-2 sm:pb-0">
+                <button onclick="filtrarCategoria('Todos')" class="cat-btn bg-quaresmaPink text-white px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold whitespace-nowrap shadow-sm transition">Todos</button>
+            </div>
+            <!-- Campo de Busca -->
+            <div class="relative w-full sm:w-72">
+                <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400"><i class="fas fa-search"></i></span>
+                <input type="text" id="inputBusca" oninput="renderizarVitrine()" placeholder="Buscar sabor de geladinho..." class="w-full pl-10 pr-4 py-2 bg-white border border-gray-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-quaresmaPink shadow-sm">
+            </div>
+        </div>
+
+        <!-- VITRINE DE PRODUTOS (2 colunas no mobile) -->
+        <div id="gridVitrine" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-6">
+            <!-- Produtos injetados via JavaScript -->
+        </div>
+    </main>
+
+    <!-- RODAPÉ -->
+    <footer class="bg-quaresmaBrown text-white py-8 border-t border-quaresmaGold/20 mt-auto">
+        <div class="max-w-6xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left">
+            <div>
+                <p class="font-bold text-base text-quaresmaGold">Quaresma Gourmet</p>
+                <p class="text-xs text-gray-300">Sabor, carinho e qualidade em cada mordida! WhatsApp: +55 99 99202-0741</p>
+            </div>
+            <div class="flex items-center gap-4 text-lg">
+                <a href="https://www.instagram.com/quaresma_gourmet/" target="_blank" class="hover:text-quaresmaGold transition"><i class="fab fa-instagram"></i></a>
+                <a href="https://wa.me/5599992020741" target="_blank" class="hover:text-quaresmaGold transition"><i class="fab fa-whatsapp"></i></a>
+            </div>
+        </div>
+    </footer>
+
+    <!-- MODAL DA SACOLA E CHECKOUT -->
+    <div id="modalSacola" class="fixed inset-0 bg-black/60 z-50 hidden flex items-end sm:items-center justify-center p-0 sm:p-4">
+        <div class="bg-white w-full max-w-lg rounded-t-3xl sm:rounded-3xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
+            <div class="bg-quaresmaPink text-white p-4 flex items-center justify-between">
+                <h3 class="font-bold text-base sm:text-lg flex items-center gap-2"><i class="fas fa-shopping-bag"></i> Sua Sacola de Geladinhos</h3>
+                <button onclick="toggleModal('modalSacola')" class="text-white hover:bg-white/20 p-2 rounded-full transition"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="p-4 sm:p-6 overflow-y-auto flex-grow space-y-4">
+                <!-- Nome do Cliente -->
+                <div>
+                    <label class="block text-xs font-bold text-quaresmaBrown uppercase mb-1">Seu Nome Completo:</label>
+                    <input type="text" id="checkoutCliente" placeholder="Digite seu nome aqui..." class="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-quaresmaPink focus:outline-none">
+                </div>
+
+                <!-- Lista de Itens -->
+                <div class="border-t border-b border-gray-100 py-3 max-h-48 overflow-y-auto space-y-2" id="listaItensSacola">
+                    <!-- Itens entram aqui -->
+                </div>
+
+                <!-- Tipo de Pedido (Retirada ou Entrega) -->
+                <div>
+                    <label class="block text-xs font-bold text-quaresmaBrown uppercase mb-1">Deseja Entrega ou Retirada?</label>
+                    <select id="tipoEntrega" onchange="atualizarTotais()" class="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-quaresmaPink focus:outline-none">
+                        <option value="retirada">Retirar no Local (Sem Taxa)</option>
+                        <option value="entrega">Entrega em Domicílio (Delivery)</option>
+                    </select>
+                </div>
+
+                <!-- Seletor de Bairro (Visível se Entrega) -->
+                <div id="blocoBairro" class="hidden">
+                    <label class="block text-xs font-bold text-quaresmaBrown uppercase mb-1">Selecione o seu Bairro:</label>
+                    <select id="selectBairro" onchange="atualizarTotais()" class="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-quaresmaPink focus:outline-none">
+                        <option value="">Selecione o bairro...</option>
+                    </select>
+                    <input type="text" id="checkoutEndereco" placeholder="Rua e número / Ponto de referência" class="w-full mt-2 p-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-quaresmaPink focus:outline-none">
+                </div>
+
+                <!-- Forma de Pagamento -->
+                <div>
+                    <label class="block text-xs font-bold text-quaresmaBrown uppercase mb-1">Forma de Pagamento:</label>
+                    <select id="formaPagamento" class="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-quaresmaPink focus:outline-none">
+                        <option value="Pix">Pix</option>
+                        <option value="Dinheiro (Espécie)">Dinheiro (Espécie)</option>
+                        <option value="Cartão de Crédito/Débito">Cartão de Crédito / Débito</option>
+                    </select>
+                </div>
+
+                <!-- Resumo dos Valores -->
+                <div class="bg-gray-50 p-4 rounded-2xl space-y-1.5 text-sm border border-gray-100">
+                    <div class="flex justify-between text-gray-600"><span>Subtotal:</span><span id="valSubtotal">R$ 0,00</span></div>
+                    <div class="flex justify-between text-gray-600"><span>Taxa de Entrega:</span><span id="valTaxaEntrega">R$ 0,00</span></div>
+                    <div class="flex justify-between font-bold text-base text-quaresmaBrown pt-2 border-t border-gray-200"><span>Valor Total:</span><span id="valTotal" class="text-quaresmaPink">R$ 0,00</span></div>
+                </div>
+            </div>
+            <div class="p-4 bg-gray-50 border-t border-gray-100">
+                <button onclick="finalizarPedidoWhatsApp()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3.5 px-4 rounded-xl shadow-lg flex items-center justify-center gap-2 transition text-base">
+                    <i class="fab fa-whatsapp text-xl"></i> Enviar Pedido no WhatsApp
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- PAINEL DO LOJISTA (PROTEGIDO POR SENHA) -->
+    <div id="modalAdmin" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-3xl rounded-3xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
+            <div class="bg-quaresmaBrown text-quaresmaGold p-4 flex items-center justify-between">
+                <h3 class="font-bold text-base sm:text-lg flex items-center gap-2"><i class="fas fa-lock"></i> Painel Exclusivo do Lojista</h3>
+                <button onclick="toggleModal('modalAdmin')" class="text-white hover:bg-white/20 p-2 rounded-full transition"><i class="fas fa-times"></i></button>
+            </div>
+
+            <!-- Tela de Login do Admin -->
+            <div id="adminLoginView" class="p-8 text-center space-y-4 my-auto">
+                <div class="w-16 h-16 bg-quaresmaBlush text-quaresmaPink rounded-full flex items-center justify-center mx-auto text-2xl shadow-inner">
+                    <i class="fas fa-shield-alt"></i>
+                </div>
+                <h4 class="text-xl font-bold text-quaresmaBrown">Acesso Restrito ao Dono(a)</h4>
+                <p class="text-xs text-gray-500 max-w-sm mx-auto">Digite sua senha de administrador para gerenciar produtos, preços, estoque e bairros de entrega.</p>
+                <div class="max-w-xs mx-auto space-y-3">
+                    <input type="password" id="adminSenhaInput" placeholder="Senha (padrão: 1234)" class="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl text-center text-lg tracking-widest focus:ring-2 focus:ring-quaresmaPink focus:outline-none">
+                    <button onclick="tentarLoginAdmin()" class="w-full bg-quaresmaPink text-white font-bold py-3 rounded-xl shadow hover:bg-rose-700 transition">Entrar no Painel</button>
+                </div>
+            </div>
+
+            <!-- Dashboard do Admin (Aparece após a senha correta) -->
+            <div id="adminDashboardView" class="hidden flex flex-col flex-grow overflow-hidden">
+                <!-- Abas do Painel -->
+                <div class="flex border-b border-gray-200 bg-gray-50 overflow-x-auto">
+                    <button onclick="mudarAbaAdmin('produtos')" id="tabBtnProdutos" class="px-5 py-3 font-bold text-xs sm:text-sm text-quaresmaPink border-b-2 border-quaresmaPink whitespace-nowrap">Gerenciar Sabores</button>
+                    <button onclick="mudarAbaAdmin('bairros')" id="tabBtnBairros" class="px-5 py-3 font-medium text-xs sm:text-sm text-gray-500 whitespace-nowrap">Bairros e Taxas</button>
+                    <button onclick="mudarAbaAdmin('config')" id="tabBtnConfig" class="px-5 py-3 font-medium text-xs sm:text-sm text-gray-500 whitespace-nowrap">Configurações & Senha</button>
+                </div>
+
+                <div class="p-4 sm:p-6 overflow-y-auto flex-grow space-y-6">
+                    <!-- Aba Produtos -->
+                    <div id="adminSecaoProdutos" class="space-y-6">
+                        <div class="bg-quaresmaBlush/50 p-4 rounded-2xl border border-quaresmaGold/30">
+                            <h4 class="font-bold text-sm text-quaresmaBrown mb-3"><i class="fas fa-plus-circle text-quaresmaPink"></i> Cadastrar Novo Geladinho</h4>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <input type="text" id="novoNome" placeholder="Nome do Sabor (ex: Doce de Leite Trufado)" class="p-2.5 bg-white border border-gray-200 rounded-xl text-xs sm:text-sm">
+                                <select id="novaCategoria" class="p-2.5 bg-white border border-gray-200 rounded-xl text-xs sm:text-sm">
+                                    <option value="Especiais & Trufados">Especiais & Trufados</option>
+                                    <option value="Clássicos Cremosos">Clássicos Cremosos</option>
+                                    <option value="Frutas Naturais">Frutas Naturais</option>
+                                </select>
+                                <input type="number" id="novoPreco" min="0.01" step="0.50" placeholder="Preço (R$) ex: 5.00" class="p-2.5 bg-white border border-gray-200 rounded-xl text-xs sm:text-sm">
+                                <input type="text" id="novaFoto" placeholder="Link da Foto (ou deixe em branco)" class="p-2.5 bg-white border border-gray-200 rounded-xl text-xs sm:text-sm">
+                            </div>
+                            <button onclick="salvarNovoProduto()" class="mt-3 bg-quaresmaPink text-white font-bold py-2.5 px-5 rounded-xl text-xs sm:text-sm shadow hover:bg-rose-700 transition">Salvar Novo Produto</button>
+                        </div>
+
+                        <!-- Lista de produtos cadastrados -->
+                        <h4 class="font-bold text-sm text-quaresmaBrown">Produtos no Sistema:</h4>
+                        <div id="adminListaProdutos" class="space-y-2">
+                            <!-- Injetado via JS -->
+                        </div>
+                    </div>
+
+                    <!-- Aba Bairros e Taxas -->
+                    <div id="adminSecaoBairros" class="hidden space-y-6">
+                        <div class="bg-quaresmaBlush/50 p-4 rounded-2xl border border-quaresmaGold/30">
+                            <h4 class="font-bold text-sm text-quaresmaBrown mb-3"><i class="fas fa-map-marker-alt text-quaresmaPink"></i> Adicionar Bairro e Taxa de Entrega</h4>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <input type="text" id="novoBairroNome" placeholder="Nome do Bairro (ex: Centro)" class="p-2.5 bg-white border border-gray-200 rounded-xl text-xs sm:text-sm">
+                                <input type="number" id="novoBairroTaxa" min="0" step="0.50" placeholder="Taxa (R$) ex: 3.00" class="p-2.5 bg-white border border-gray-200 rounded-xl text-xs sm:text-sm">
+                            </div>
+                            <button onclick="salvarNovoBairro()" class="mt-3 bg-quaresmaPink text-white font-bold py-2.5 px-5 rounded-xl text-xs sm:text-sm shadow hover:bg-rose-700 transition">Adicionar Bairro</button>
+                        </div>
+                        <div id="adminListaBairros" class="space-y-2">
+                            <!-- Injetado via JS -->
+                        </div>
+                    </div>
+
+                    <!-- Aba Configurações & Senha -->
+                    <div id="adminSecaoConfig" class="hidden space-y-4">
+                        <div class="bg-gray-50 p-4 rounded-2xl border border-gray-200 space-y-3">
+                            <h4 class="font-bold text-sm text-quaresmaBrown">Alterar Senha do Painel</h4>
+                            <input type="password" id="novaSenhaAdminInput" placeholder="Nova senha de administrador" class="w-full p-2.5 bg-white border border-gray-200 rounded-xl text-xs sm:text-sm">
+                            <button onclick="salvarNovaSenha()" class="bg-quaresmaBrown text-quaresmaGold font-bold py-2 px-4 rounded-xl text-xs shadow hover:bg-black transition">Atualizar Senha</button>
+                        </div>
+                        <div class="bg-gray-50 p-4 rounded-2xl border border-gray-200 space-y-3">
+                            <h4 class="font-bold text-sm text-quaresmaBrown">Status da Loja</h4>
+                            <select id="statusLojaSelect" onchange="mudarStatusLoja()" class="w-full p-2.5 bg-white border border-gray-200 rounded-xl text-xs sm:text-sm">
+                                <option value="🟢 Aberto">🟢 Aberto (Aceitando Pedidos)</option>
+                                <option value="🟡 Aceitando Encomendas">🟡 Aceitando Encomendas</option>
+                                <option value="🔴 Fechado">🔴 Fechado</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SCRIPT DE FUNCIONAMENTO E FIREBASE -->
+    <script>
+        // =========================================================================
+        // COLE SUAS CONFIGURAÇÕES DO FIREBASE ABAIXO (OBTIDAS NO PASSO 1)
+        // =========================================================================
+        const firebaseConfig = {
+            apiKey: "AIzaSyD7cxqUc81u5UmZwOzsputXTaFYx28dCfM",
+            authDomain: "quaresma-gourmet.firebaseapp.com",
+            projectId: "quaresma-gourmet",
+            storageBucket: "quaresma-gourmet.firebasestorage.app",
+            messagingSenderId: "1055907575056",
+            appId: "1:1055907575056:web:81f9a317d87d9919a4a195"
+        };
+
+        // Inicializar Firebase
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+        const db = firebase.firestore();
+
+        // Dados padrão caso o banco esteja vazio
+        let produtos = [
+            { id: '1', nome: 'Doce de Leite Trufado', categoria: 'Especiais & Trufados', preco: 6.00, esgotado: false, foto: 'https://images.unsplash.com/photo-1551024709-8f23befc6f87?w=400' },
+            { id: '2', nome: 'Ninho com Nutella', categoria: 'Especiais & Trufados', preco: 7.00, esgotado: false, foto: 'https://images.unsplash.com/photo-1587314168485-3236d6710814?w=400' },
+            { id: '3', nome: 'Morango Cremoso', categoria: 'Clássicos Cremosos', preco: 5.00, esgotado: false, foto: 'https://images.unsplash.com/photo-1488477181946-6428a0291777?w=400' },
+            { id: '4', nome: 'Maracujá com Chocolate', categoria: 'Frutas Naturais', preco: 5.00, esgotado: false, foto: 'https://images.unsplash.com/photo-1505394033641-40c6ad1178d7?w=400' }
+        ];
+
+        let bairros = [
+            { nome: 'Centro', taxa: 3.00 },
+            { nome: 'Bairros Próximos', taxa: 5.00 }
+        ];
+
+        let senhaAdmin = localStorage.getItem('quaresma_senha') || '1234';
+        let statusLojaAtual = '🟢 Aberto';
+        let sacola = {};
+        let categoriaAtiva = 'Todos';
+
+        // Carregar dados do Firebase em Tempo Real
+        function carregarDadosFirestore() {
+            db.collection("configuracoes").doc("loja").onSnapshot((doc) => {
+                if (doc.exists) {
+                    const dados = doc.data();
+                    if (dados.produtos) produtos = dados.produtos;
+                    if (dados.bairros) bairros = dados.bairros;
+                    if (dados.statusLoja) {
+                        statusLojaAtual = dados.statusLoja;
+                        document.getElementById('statusLojaBadge').innerText = statusLojaAtual;
+                        document.getElementById('statusLojaSelect').value = statusLojaAtual;
+                    }
+                } else {
+                    salvarDadosFirestore(); // Salva os padrão se não existir
+                }
+                renderizarCategorias();
+                renderizarVitrine();
+                renderizarAdminProdutos();
+                renderizarAdminBairros();
+            });
+        }
+
+        function salvarDadosFirestore() {
+            db.collection("configuracoes").doc("loja").set({
+                produtos: produtos,
+                bairros: bairros,
+                statusLoja: statusLojaAtual
+            }).catch((error) => {
+                console.error("Erro ao salvar no Firestore: ", error);
+            });
+        }
+
+        // Modais
+        function toggleModal(id) {
+            const modal = document.getElementById(id);
+            modal.classList.toggle('hidden');
+            if(id === 'modalSacola') atualizarSacolaModal();
+        }
+
+        // Renderização de Categorias
+        function renderizarCategorias() {
+            const container = document.getElementById('listaCategoriasFiltro');
+            const cats = ['Todos', ...new Set(produtos.map(p => p.categoria))];
+            container.innerHTML = cats.map(cat => `
+                <button onclick="filtrarCategoria('${cat}')" class="cat-btn ${categoriaAtiva === cat ? 'bg-quaresmaPink text-white shadow-md' : 'bg-white text-quaresmaBrown border border-gray-200 hover:bg-gray-50'} px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold whitespace-nowrap transition">${cat}</button>
+            `).join('');
+        }
+
+        function filtrarCategoria(cat) {
+            categoriaAtiva = cat;
+            renderizarCategorias();
+            renderizarVitrine();
+        }
+
+        // Renderizar Vitrine no Celular/Desktop
+        function renderizarVitrine() {
+            const busca = document.getElementById('inputBusca').value.toLowerCase();
+            const grid = document.getElementById('gridVitrine');
+
+            const filtrados = produtos.filter(p => {
+                const matchCat = categoriaAtiva === 'Todos' || p.categoria === categoriaAtiva;
+                const matchBusca = p.nome.toLowerCase().includes(busca);
+                return matchCat && matchBusca;
+            });
+
+            if(filtrados.length === 0) {
+                grid.innerHTML = `<div class="col-span-full text-center py-12 text-gray-400 text-sm">Nenhum geladinho encontrado.</div>`;
+                return;
+            }
+
+            grid.innerHTML = filtrados.map(p => {
+                const qtdNaSacola = sacola[p.id] ? sacola[p.id].qtd : 0;
+                return `
+                    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden flex flex-col justify-between hover:shadow-md transition">
+                        <div class="relative h-32 sm:h-40 bg-quaresmaBlush overflow-hidden">
+                            <img src="${p.foto || 'https://images.unsplash.com/photo-1551024709-8f23befc6f87?w=400'}" alt="${p.nome}" class="w-full h-full object-cover">
+                            ${p.esgotado ? '<div class="absolute inset-0 bg-black/60 flex items-center justify-center text-white font-bold text-xs uppercase tracking-wider">Esgotado</div>' : ''}
+                            <span class="absolute top-2 left-2 bg-white/90 text-quaresmaBrown text-[10px] font-bold px-2 py-0.5 rounded-full shadow">150ml</span>
+                        </div>
+                        <div class="p-3 sm:p-4 flex flex-col flex-grow justify-between gap-2">
+                            <div>
+                                <span class="text-[10px] font-semibold text-quaresmaPink uppercase tracking-wider">${p.categoria}</span>
+                                <h3 class="font-bold text-quaresmaBrown text-xs sm:text-sm leading-tight mt-0.5">${p.nome}</h3>
+                            </div>
+                            <div class="flex items-center justify-between mt-2 pt-2 border-t border-gray-100">
+                                <span class="font-extrabold text-quaresmaPink text-sm sm:text-base">R$ ${p.preco.toFixed(2).replace('.', ',')}</span>
+                                ${!p.esgotado ? `
+                                    <div class="flex items-center gap-1.5 bg-gray-50 p-1 rounded-xl border border-gray-200">
+                                        <button onclick="alterarQtd('${p.id}', -1)" class="w-6 h-6 bg-white text-gray-600 rounded-lg shadow-sm font-bold text-xs flex items-center justify-center hover:bg-quaresmaBlush transition">-</button>
+                                        <span class="text-xs font-bold w-4 text-center">${qtdNaSacola}</span>
+                                        <button onclick="alterarQtd('${p.id}', 1)" class="w-6 h-6 bg-quaresmaPink text-white rounded-lg shadow-sm font-bold text-xs flex items-center justify-center hover:bg-rose-700 transition">+</button>
+                                    </div>
+                                ` : ''}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Carrinho
+        function alterarQtd(id, delta) {
+            const produto = produtos.find(p => p.id === id);
+            if(!sacola[id]) {
+                if(delta > 0) sacola[id] = { ...produto, qtd: 1 };
+            } else {
+                sacola[id].qtd += delta;
+                if(sacola[id].qtd <= 0) delete sacola[id];
+            }
+            atualizarBadgeSacola();
+            renderizarVitrine();
+        }
+
+        function atualizarBadgeSacola() {
+            const totalQtd = Object.values(sacola).reduce((acc, item) => acc + item.qtd, 0);
+            document.getElementById('badgeQtd').innerText = totalQtd;
+        }
+
+        function atualizarSacolaModal() {
+            const lista = document.getElementById('listaItensSacola');
+            const itens = Object.values(sacola);
+
+            if(itens.length === 0) {
+                lista.innerHTML = `<p class="text-xs text-gray-400 text-center py-4">Sua sacola está vazia.</p>`;
+            } else {
+                lista.innerHTML = itens.map(item => `
+                    <div class="flex items-center justify-between text-xs sm:text-sm">
+                        <div>
+                            <p class="font-bold text-quaresmaBrown">${item.nome}</p>
+                            <p class="text-gray-500">R$ ${item.preco.toFixed(2).replace('.', ',')} x ${item.qtd}</p>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="font-bold text-quaresmaPink">R$ ${(item.preco * item.qtd).toFixed(2).replace('.', ',')}</span>
+                            <button onclick="removerItemSacola('${item.id}')" class="text-red-500 hover:text-red-700 p-1"><i class="fas fa-trash text-xs"></i></button>
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            // Atualizar select de bairros
+            const selectBairro = document.getElementById('selectBairro');
+            selectBairro.innerHTML = `<option value="">Selecione o bairro...</option>` + bairros.map(b => `
+                <option value="${b.nome}" data-taxa="${b.taxa}">${b.nome} (Taxa: R$ ${b.taxa.toFixed(2).replace('.', ',')})</option>
+            `).join('');
+
+            const tipo = document.getElementById('tipoEntrega').value;
+            document.getElementById('blocoBairro').classList.toggle('hidden', tipo !== 'entrega');
+            atualizarTotais();
+        }
+
+        function removerItemSacola(id) {
+            delete sacola[id];
+            atualizarBadgeSacola();
+            atualizarSacolaModal();
+            renderizarVitrine();
+        }
+
+        function atualizarTotais() {
+            const subtotal = Object.values(sacola).reduce((acc, item) => acc + (item.preco * item.qtd), 0);
+            let taxa = 0;
+
+            const tipo = document.getElementById('tipoEntrega').value;
+            if(tipo === 'entrega') {
+                const select = document.getElementById('selectBairro');
+                const opt = select.options[select.selectedIndex];
+                if(opt && opt.dataset.taxa) {
+                    taxa = parseFloat(opt.dataset.taxa);
+                }
+            }
+
+            const total = subtotal + taxa;
+
+            document.getElementById('valSubtotal').innerText = `R$ ${subtotal.toFixed(2).replace('.', ',')}`;
+            document.getElementById('valTaxaEntrega').innerText = `R$ ${taxa.toFixed(2).replace('.', ',')}`;
+            document.getElementById('valTotal').innerText = `R$ ${total.toFixed(2).replace('.', ',')}`;
+        }
+
+        function finalizarPedidoWhatsApp() {
+            const nomeCliente = document.getElementById('checkoutCliente').value.trim();
+            if(!nomeCliente) {
+                alert('Por favor, informe seu Nome Completo no topo da sacola.');
+                document.getElementById('checkoutCliente').focus();
+                return;
+            }
+
+            const itens = Object.values(sacola);
+            if(itens.length === 0) {
+                alert('Sua sacola está vazia!');
+                return;
+            }
+
+            const tipo = document.getElementById('tipoEntrega').value;
+            let infoEntrega = "Retirada no Local";
+            let taxaValor = 0;
+
+            if(tipo === 'entrega') {
+                const bairroNome = document.getElementById('selectBairro').value;
+                const endereco = document.getElementById('checkoutEndereco').value.trim();
+                if(!bairroNome || !endereco) {
+                    alert('Por favor, selecione o bairro e preencha o endereço completo.');
+                    return;
+                }
+                const bObj = bairros.find(b => b.nome === bairroNome);
+                taxaValor = bObj ? bObj.taxa : 0;
+                infoEntrega = `Entrega em Domicílio\n*Bairro:* ${bairroNome}\n*Endereço:* ${endereco}`;
+            }
+
+            const pagamento = document.getElementById('formaPagamento').value;
+            const subtotal = itens.reduce((acc, i) => acc + (i.preco * i.qtd), 0);
+            const total = subtotal + taxaValor;
+
+            let mensagem = `*NOVO PEDIDO - QUARESMA GOURMET*\n\n` +
+                           `👤 *Cliente:* ${nomeCliente}\n\n` +
+                           `🛍️ *Itens do Pedido:*\n`;
+
+            itens.forEach(i => {
+                mensagem += `- ${i.qtd}x ${i.nome} (R$ ${(i.preco * i.qtd).toFixed(2).replace('.', ',')})\n`;
+            });
+
+            mensagem += `\n📦 *Tipo:* ${infoEntrega}\n` +
+                        `💳 *Pagamento:* ${pagamento}\n` +
+                        `💰 *Subtotal:* R$ ${subtotal.toFixed(2).replace('.', ',')}\n` +
+                        `🚚 *Taxa:* R$ ${taxaValor.toFixed(2).replace('.', ',')}\n` +
+                        `⭐ *VALOR TOTAL:* *R$ ${total.toFixed(2).replace('.', ',')}*`;
+
+            const url = `https://wa.me/5599992020741?text=${encodeURIComponent(mensagem)}`;
+            window.open(url, '_blank');
+        }
+
+        // =========================================================================
+        // PAINEL ADMINISTRADOR
+        // =========================================================================
+        function tentarLoginAdmin() {
+            const senhaDigitada = document.getElementById('adminSenhaInput').value;
+            if(senhaDigitada === senhaAdmin) {
+                document.getElementById('adminLoginView').classList.add('hidden');
+                document.getElementById('adminDashboardView').classList.remove('hidden');
+            } else {
+                alert('Senha incorreta!');
+            }
+        }
+
+        function mudarAbaAdmin(aba) {
+            document.getElementById('adminSecaoProdutos').classList.add('hidden');
+            document.getElementById('adminSecaoBairros').classList.add('hidden');
+            document.getElementById('adminSecaoConfig').classList.add('hidden');
+            document.getElementById('tabBtnProdutos').className = "px-5 py-3 font-medium text-xs sm:text-sm text-gray-500 whitespace-nowrap";
+            document.getElementById('tabBtnBairros').className = "px-5 py-3 font-medium text-xs sm:text-sm text-gray-500 whitespace-nowrap";
+            document.getElementById('tabBtnConfig').className = "px-5 py-3 font-medium text-xs sm:text-sm text-gray-500 whitespace-nowrap";
+
+            if(aba === 'produtos') {
+                document.getElementById('adminSecaoProdutos').classList.remove('hidden');
+                document.getElementById('tabBtnProdutos').className = "px-5 py-3 font-bold text-xs sm:text-sm text-quaresmaPink border-b-2 border-quaresmaPink whitespace-nowrap";
+            } else if(aba === 'bairros') {
+                document.getElementById('adminSecaoBairros').classList.remove('hidden');
+                document.getElementById('tabBtnBairros').className = "px-5 py-3 font-bold text-xs sm:text-sm text-quaresmaPink border-b-2 border-quaresmaPink whitespace-nowrap";
+            } else if(aba === 'config') {
+                document.getElementById('adminSecaoConfig').classList.remove('hidden');
+                document.getElementById('tabBtnConfig').className = "px-5 py-3 font-bold text-xs sm:text-sm text-quaresmaPink border-b-2 border-quaresmaPink whitespace-nowrap";
+            }
+        }
+
+        function renderizarAdminProdutos() {
+            const lista = document.getElementById('adminListaProdutos');
+            lista.innerHTML = produtos.map(p => `
+                <div class="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-200 text-xs sm:text-sm">
+                    <div>
+                        <p class="font-bold text-quaresmaBrown">${p.nome} <span class="text-xs font-normal text-gray-500">(${p.categoria})</span></p>
+                        <p class="text-quaresmaPink font-bold">R$ ${p.preco.toFixed(2).replace('.', ',')} ${p.esgotado ? '<span class="text-red-500 font-normal">[ESGOTADO]</span>' : ''}</p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button onclick="alternarEsgotado('${p.id}')" class="px-2.5 py-1 rounded-lg text-xs font-bold ${p.esgotado ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}">${p.esgotado ? 'Disponibilizar' : 'Esgotar'}</button>
+                        <button onclick="deletarProduto('${p.id}')" class="bg-red-100 text-red-600 px-2.5 py-1 rounded-lg font-bold"><i class="fas fa-trash"></i></button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function salvarNovoProduto() {
+            const nome = document.getElementById('novoNome').value.trim();
+            const categoria = document.getElementById('novaCategoria').value;
+            const preco = parseFloat(document.getElementById('novoPreco').value);
+            const foto = document.getElementById('novaFoto').value.trim();
+
+            if(!nome || isNaN(preco) || preco <= 0) {
+                alert('Preencha o nome e um preço válido maior que zero.');
+                return;
+            }
+
+            const novoObj = {
+                id: Date.now().toString(),
+                nome,
+                categoria,
+                preco,
+                esgotado: false,
+                foto: foto || 'https://images.unsplash.com/photo-1551024709-8f23befc6f87?w=400'
+            };
+
+            produtos.push(novoObj);
+            salvarDadosFirestore();
+            document.getElementById('novoNome').value = '';
+            document.getElementById('novoPreco').value = '';
+            document.getElementById('novaFoto').value = '';
+            alert('Produto cadastrado com sucesso!');
+        }
+
+        function alternarEsgotado(id) {
+            const p = produtos.find(item => item.id === id);
+            if(p) {
+                p.esgotado = !p.esgotado;
+                salvarDadosFirestore();
+            }
+        }
+
+        function deletarProduto(id) {
+            if(confirm('Deseja realmente excluir este produto?')) {
+                produtos = produtos.filter(item => item.id !== id);
+                salvarDadosFirestore();
+            }
+        }
+
+        function renderizarAdminBairros() {
+            const lista = document.getElementById('adminListaBairros');
+            lista.innerHTML = bairros.map((b, index) => `
+                <div class="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-200 text-xs sm:text-sm">
+                    <div>
+                        <p class="font-bold text-quaresmaBrown">${b.nome}</p>
+                        <p class="text-quaresmaPink font-bold">Taxa: R$ ${b.taxa.toFixed(2).replace('.', ',')}</p>
+                    </div>
+                    <button onclick="deletarBairro(${index})" class="bg-red-100 text-red-600 px-2.5 py-1 rounded-lg font-bold"><i class="fas fa-trash"></i></button>
+                </div>
+            `).join('');
+        }
+
+        function salvarNovoBairro() {
+            const nome = document.getElementById('novoBairroNome').value.trim();
+            const taxa = parseFloat(document.getElementById('novoBairroTaxa').value);
+
+            if(!nome || isNaN(taxa) || taxa < 0) {
+                alert('Preencha o nome do bairro e uma taxa válida.');
+                return;
+            }
+
+            bairros.push({ nome, taxa });
+            salvarDadosFirestore();
+            document.getElementById('novoBairroNome').value = '';
+            document.getElementById('novoBairroTaxa').value = '';
+            alert('Bairro adicionado com sucesso!');
+        }
+
+        function deletarBairro(index) {
+            bairros.splice(index, 1);
+            salvarDadosFirestore();
+        }
+
+        function salvarNovaSenha() {
+            const nova = document.getElementById('novaSenhaAdminInput').value.trim();
+            if(nova.length < 3) {
+                alert('A senha deve ter pelo menos 3 caracteres.');
+                return;
+            }
+            senhaAdmin = nova;
+            localStorage.setItem('quaresma_senha', senhaAdmin);
+            alert('Senha alterada com sucesso!');
+            document.getElementById('novaSenhaAdminInput').value = '';
+        }
+
+        function mudarStatusLoja() {
+            statusLojaAtual = document.getElementById('statusLojaSelect').value;
+            salvarDadosFirestore();
+        }
+
+        // Inicializar dados ao carregar a página
+        window.onload = function() {
+            carregarDadosFirestore();
+        };
+    </script>
+</body>
+</html>
