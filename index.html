@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
     <title>Quaresma Gourmet | Delícias da Quaresma - Geladinho Gourmet</title>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Font Awesome Icons -->
@@ -133,17 +135,23 @@
         .line-clamp-1 {
             display: -webkit-box;
             -webkit-line-clamp: 1;
+            line-clamp: 1;
             -webkit-box-orient: vertical;
             overflow: hidden;
         }
         .line-clamp-2 {
             display: -webkit-box;
             -webkit-line-clamp: 2;
+            line-clamp: 2;
             -webkit-box-orient: vertical;
             overflow: hidden;
         }
     </style>
+<!-- Firebase SDK Compat -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 </head>
+
 <body class="min-h-screen flex flex-col antialiased selection:bg-berry-600 selection:text-white">
 
     <!-- ========================================================================= -->
@@ -1784,81 +1792,47 @@
         }
 
         function loadPersistedState() {
-            try {
-                const savedProds = localStorage.getItem("qg_v3_products");
-                products = savedProds ? JSON.parse(savedProds) : JSON.parse(JSON.stringify(DEFAULT_PRODUCTS));
+            db.collection("loja").doc("dados").onSnapshot((doc) => {
+                if (doc.exists) {
+                    const data = doc.data();
+                    products = data.products || JSON.parse(JSON.stringify(DEFAULT_PRODUCTS));
+                    categories = data.categories || [...DEFAULT_CATEGORIES];
+                    neighborhoods = data.neighborhoods || JSON.parse(JSON.stringify(DEFAULT_NEIGHBORHOODS));
+                    announcements = data.announcements || [...DEFAULT_ANNOUNCEMENTS];
+                    marqueeEnabled = data.marqueeEnabled !== false;
+                    storeOpenStatus = data.storeOpenStatus || "aberta";
+                    storePixKey = data.storePixKey || "(99) 99202-0741";
+                    hideOutOfStock = data.hideOutOfStock !== false;
 
-                const savedCats = localStorage.getItem("qg_v3_categories");
-                categories = savedCats ? JSON.parse(savedCats) : [...DEFAULT_CATEGORIES];
-
-                const savedNeigh = localStorage.getItem("qg_v3_neighborhoods");
-                neighborhoods = savedNeigh ? JSON.parse(savedNeigh) : JSON.parse(JSON.stringify(DEFAULT_NEIGHBORHOODS));
-
-                const savedAnn = localStorage.getItem("qg_v3_announcements");
-                announcements = savedAnn ? JSON.parse(savedAnn) : [...DEFAULT_ANNOUNCEMENTS];
-
-                const savedMarqueeOn = localStorage.getItem("qg_v3_marquee_on");
-                marqueeEnabled = savedMarqueeOn !== null ? JSON.parse(savedMarqueeOn) : true;
-
-                const savedStatus = localStorage.getItem("qg_v3_store_status");
-                if (savedStatus) storeOpenStatus = savedStatus;
-
-                const savedPix = localStorage.getItem("qg_v3_pix_key");
-                if (savedPix) storePixKey = savedPix;
-
-                const savedHide = localStorage.getItem("qg_v3_hide_oos");
-                hideOutOfStock = savedHide !== null ? JSON.parse(savedHide) : true;
-
-                const savedPass = localStorage.getItem("qg_v3_owner_pass");
-                if (savedPass) ownerPassword = savedPass;
-
-                const savedCart = localStorage.getItem("qg_v3_cart");
-                if (savedCart) cart = JSON.parse(savedCart);
-
-                const savedLogo = localStorage.getItem("quaresma_custom_logo");
-                if (savedLogo) applyLogoToPage(savedLogo);
-
-                // Restaurar rascunho de endereço/nome do cliente (mas mantendo o bairro para escolha consciente)
-                const savedDraft = localStorage.getItem("qg_v3_customer_draft");
-                if (savedDraft) {
-                    const draft = JSON.parse(savedDraft);
-                    if (draft.name && document.getElementById("customerName")) document.getElementById("customerName").value = draft.name;
-                    if (draft.street && document.getElementById("addressStreet")) document.getElementById("addressStreet").value = draft.street;
-                    if (draft.number && document.getElementById("addressNumber")) document.getElementById("addressNumber").value = draft.number;
-                    if (draft.reference && document.getElementById("addressReference")) document.getElementById("addressReference").value = draft.reference;
+                    renderMarqueeBanner();
+                    renderCategoryTabs();
+                    renderNeighborhoodSelect();
+                    renderCatalog();
+                    if (isOwnerAuthenticated) toggleAdminModal(true);
+                } else {
+                    persistStoreData();
                 }
+            });
 
-                // IMPORTANTE: O bairro inicia vazio ("") para nunca cobrar R$ 3,00 sem o cliente escolher
-                selectedNeighborhoodId = "";
-
-                products.forEach(p => {
-                    if (p.inStock === undefined) p.inStock = true;
-                    if (p.visible === undefined) p.visible = true;
-                    cardQuantities[p.id] = 1;
-                });
-
-                updatePixKeyUI();
-            } catch (e) {
-                products = JSON.parse(JSON.stringify(DEFAULT_PRODUCTS));
-                categories = [...DEFAULT_CATEGORIES];
-                neighborhoods = JSON.parse(JSON.stringify(DEFAULT_NEIGHBORHOODS));
-                announcements = [...DEFAULT_ANNOUNCEMENTS];
-                selectedNeighborhoodId = "";
-                products.forEach(p => { cardQuantities[p.id] = 1; });
-            }
+            ownerPassword = localStorage.getItem("qg_v3_owner_pass") || "1234";
+            const savedCart = localStorage.getItem("qg_v3_cart");
+            if (savedCart) cart = JSON.parse(savedCart);
+            selectedNeighborhoodId = "";
+            products.forEach(p => { cardQuantities[p.id] = 1; });
+            updatePixKeyUI();
         }
 
         function persistStoreData() {
-            try {
-                localStorage.setItem("qg_v3_products", JSON.stringify(products));
-                localStorage.setItem("qg_v3_categories", JSON.stringify(categories));
-                localStorage.setItem("qg_v3_neighborhoods", JSON.stringify(neighborhoods));
-                localStorage.setItem("qg_v3_announcements", JSON.stringify(announcements));
-                localStorage.setItem("qg_v3_marquee_on", JSON.stringify(marqueeEnabled));
-                localStorage.setItem("qg_v3_store_status", storeOpenStatus);
-                localStorage.setItem("qg_v3_pix_key", storePixKey);
-                localStorage.setItem("qg_v3_hide_oos", JSON.stringify(hideOutOfStock));
-            } catch (e) {}
+            db.collection("loja").doc("dados").set({
+                products: products,
+                categories: categories,
+                neighborhoods: neighborhoods,
+                announcements: announcements,
+                marqueeEnabled: marqueeEnabled,
+                storeOpenStatus: storeOpenStatus,
+                storePixKey: storePixKey,
+                hideOutOfStock: hideOutOfStock
+            }).catch(error => console.error("Erro ao salvar no Firebase:", error));
         }
 
         function saveCustomerDraft() {
