@@ -1749,7 +1749,8 @@
         let marqueeEnabled = true;
         let storeOpenStatus = "aberta";
         let storePixKey = "(99) 99202-0741";
-        let hideOutOfStock = true;
+        let hideOutOfStock = false; // Mudado para false para mostrar os esgotados na vitrine
+        let storeCustomLogo = ""; // Nova variável para salvar a logomarca na nuvem
         let ownerPassword = "1234";
         let isOwnerAuthenticated = false;
 
@@ -1802,12 +1803,19 @@
                     marqueeEnabled = data.marqueeEnabled !== false;
                     storeOpenStatus = data.storeOpenStatus || "aberta";
                     storePixKey = data.storePixKey || "(99) 99202-0741";
-                    hideOutOfStock = data.hideOutOfStock !== false;
+                    hideOutOfStock = data.hideOutOfStock === true; // Agora o padrão é não ocultar
+                    storeCustomLogo = data.storeCustomLogo || "";
 
                     renderMarqueeBanner();
                     renderCategoryTabs();
                     renderNeighborhoodSelect();
                     renderCatalog();
+                    
+                    // Aplica a logomarca salva na nuvem
+                    if (storeCustomLogo) {
+                        applyLogoToPage(storeCustomLogo);
+                    }
+
                     if (isOwnerAuthenticated) toggleAdminModal(true);
                 } else {
                     persistStoreData();
@@ -1831,7 +1839,8 @@
                 marqueeEnabled: marqueeEnabled,
                 storeOpenStatus: storeOpenStatus,
                 storePixKey: storePixKey,
-                hideOutOfStock: hideOutOfStock
+                hideOutOfStock: hideOutOfStock,
+                storeCustomLogo: storeCustomLogo // Salva a logomarca no Firebase para todos os clientes
             }).catch(error => console.error("Erro ao salvar no Firebase:", error));
         }
 
@@ -3295,6 +3304,8 @@ const firebaseConfig = {
             if (!file) return;
             compressImageFile(file, 400, 0.82, function(compressedUrl) {
                 applyLogoToPage(compressedUrl);
+                storeCustomLogo = compressedUrl; // Salva na variável global
+                persistStoreData(); // Sincroniza com a nuvem na mesma hora
                 try {
                     localStorage.setItem("quaresma_custom_logo", compressedUrl);
                 } catch (err) {}
@@ -3303,6 +3314,8 @@ const firebaseConfig = {
         }
 
         function removeCustomLogo() {
+            storeCustomLogo = "";
+            persistStoreData(); // Remove da nuvem
             try {
                 localStorage.removeItem("quaresma_custom_logo");
             } catch (e) {}
