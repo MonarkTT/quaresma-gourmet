@@ -1173,41 +1173,33 @@
                         </select>
                     </div>
 
-                    <!-- Ativar / Desativar Faixa Rotativa -->
+                    <!-- Ativar / Desativar Faixa Rotativa e Velocidade -->
                     <div class="bg-blush-50 p-4 rounded-2xl border border-rose-100 space-y-3">
-                        <div class="flex items-center justify-between">
-                            <h4 class="text-xs font-extrabold uppercase text-berry-700">Faixa Rotativa no Topo (Letreiro de Avisos)</h4>
-                            <label class="flex items-center gap-2 text-xs font-bold text-choco-800 cursor-pointer">
-                                <input type="checkbox" id="marqueeEnabledCheckbox" onchange="toggleMarqueeEnabled(this.checked)" class="w-4 h-4 accent-berry-600">
-                                <span>Exibir Faixa no Topo</span>
-                            </label>
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                            <div>
+                                <h4 class="text-xs font-extrabold uppercase text-berry-700">Faixa Rotativa (Topo)</h4>
+                                <label class="flex items-center gap-2 text-xs font-bold text-choco-800 cursor-pointer mt-1">
+                                    <input type="checkbox" id="marqueeEnabledCheckbox" onchange="toggleMarqueeEnabled(this.checked)" class="w-4 h-4 accent-berry-600">
+                                    <span>Exibir Faixa no Site</span>
+                                </label>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <label class="text-[11px] font-bold text-choco-600">Velocidade:</label>
+                                <select id="marqueeSpeedSelect" onchange="applyMarqueeSpeed(this.value)" class="px-2 py-1.5 rounded-lg bg-white border border-rose-200 text-xs font-bold text-choco-800">
+                                    <option value="15">Rápido (15s)</option>
+                                    <option value="28" selected>Normal (28s)</option>
+                                    <option value="45">Lento (45s)</option>
+                                </select>
+                            </div>
                         </div>
-                        <p class="text-[11px] text-choco-600">
-                            Adicione avisos sobre promoções, horários de entrega, novos sabores ou comunicados para seus clientes.
+                        <p class="text-[11px] text-choco-600 border-t border-rose-100 pt-2">
+                            Adicione avisos sobre promoções, horários ou comunicados.
                         </p>
                         <div class="flex flex-col sm:flex-row gap-2">
-                            <input 
-                                type="text" 
-                                id="newAnnouncementInput" 
-                                placeholder="Ex: 🍓 Terça Maluca: Comprando 5 Geladinhos ganhe desconto na entrega!" 
-                                class="flex-1 px-3.5 py-2.5 rounded-xl bg-white border border-rose-200 text-xs font-semibold focus:outline-none focus:border-berry-600"
-                            >
-                            <button 
-                                onclick="addAnnouncement()" 
-                                class="btn-berry text-white px-5 py-2.5 rounded-xl text-xs font-extrabold whitespace-nowrap"
-                            >
-                                + Adicionar Aviso
-                            </button>
+                            <input type="text" id="newAnnouncementInput" placeholder="Ex: 🍓 Terça Maluca: Desconto!" class="flex-1 px-3.5 py-2.5 rounded-xl bg-white border border-rose-200 text-xs font-semibold">
+                            <button onclick="addAnnouncement()" class="btn-berry text-white px-5 py-2.5 rounded-xl text-xs font-extrabold whitespace-nowrap">+ Adicionar Aviso</button>
                         </div>
                     </div>
-
-                    <div>
-                        <h4 class="text-xs font-extrabold uppercase text-choco-800 mb-2">Frases Ativas na Faixa Rotativa</h4>
-                        <div id="adminAnnouncementsList" class="divide-y divide-rose-100 border border-rose-200 rounded-2xl overflow-hidden bg-white">
-                            <!-- Renderizado via JS -->
-                        </div>
-                    </div>
-                </div>
 
                 <!-- =============================================================== -->
                 <!-- ABA 4: LOGOMARCA DA LOJA, CHAVE PIX, SENHA E RESTAURAÇÃO        -->
@@ -3380,6 +3372,16 @@ const firebaseConfig = {
                 toast.classList.add("translate-x-[150%]");
             }, 2400);
         }
+
+        // Aplica a velocidade da faixa rotativa
+        function applyMarqueeSpeed(seconds) {
+            marqueeSpeed = parseInt(seconds) || 28;
+            persistStoreData();
+            const track = document.getElementById("marqueeTrack");
+            if (track) track.style.animationDuration = `${marqueeSpeed}s`;
+            showToast("Velocidade Salva", "A velocidade da faixa foi ajustada.");
+        }
+        
     </script>
 </body>
 </html>
